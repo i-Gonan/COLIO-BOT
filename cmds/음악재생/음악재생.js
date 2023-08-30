@@ -1,6 +1,11 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { joinVoiceChannel } = require("@discordjs/voice");
-const { getVoiceConnection } = require("@discordjs/voice");
+const { joinVoiceChannel, getVoiceConnection } = require("@discordjs/voice");
+const {
+  createAudioPlayer,
+  createAudioResource,
+  AudioPlayerStatus,
+} = require("@discordjs/voice");
+const ytdl = require("ytdl-core");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -13,15 +18,25 @@ module.exports = {
         .setRequired(true)
     ),
   async execute(interaction) {
-    //playing music on youtube in discord voice channel.
-    const url = interaction.options.getString("url");
-    const channel = interaction.member.voice.channel;
-    const connection = joinVoiceChannel({
-      channelId: channel.id,
-      guildId: channel.guild.id,
-      adapterCreator: channel.guild.voiceAdapterCreator,
-    });
-    //connection.
-    await interaction.reply("음악을 재생합니다.");
+    try {
+      const url = interaction.options.getString("url");
+      const channel = interaction.member.voice.channel;
+      const connection = joinVoiceChannel({
+        channelId: channel.id,
+        guildId: channel.guild.id,
+        adapterCreator: channel.guild.voiceAdapterCreator,
+      });
+      const player = createAudioPlayer();
+      const resource = createAudioResource(ytdl(url, { filter: "audioonly" }));
+      player.play(resource);
+      connection.subscribe(player);
+      await interaction.reply(
+        `${interaction.member}님이 요청한 노래를 재생합니다.`
+      );
+    } catch (e) {
+      if (TypeError) {
+        await interaction.reply("재생할 수 없는 영상입니다.");
+      }
+    }
   },
 };
